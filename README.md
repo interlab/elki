@@ -1,4 +1,4 @@
-Fast installator for ElkArte
+### Fast installator for ElkArte ###
 
 Это не аддон, это утилита для:
 
@@ -10,6 +10,7 @@ Fast installator for ElkArte
 + загружает аватар админу
 + создаёт сообщение на форуме
 
+### Setup ###
 Edit config.yml
 
 ```composer install```
