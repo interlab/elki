@@ -1,0 +1,9 @@
+{
+    "require": {
+        "symfony/dom-crawler": "^3.0",
+        "fabpot/goutte": "^3.1",
+        "symfony/var-dumper": "^3.0",
+        "corneltek/getoptionkit": "~2",
+        "symfony/yaml": "^3.0"
+    }
+}

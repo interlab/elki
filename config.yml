@@ -1,0 +1,17 @@
+
+# Database server settings
+db:
+    db_server: localhost
+    db_user: root
+    db_passwd: password
+    db_name: 'elki1_{{t}}'
+    db_prefix: 'elk_{{t}}_'
+
+# admin user
+admin:
+    username: 'Homer Simpson'
+    password1: qwerty
+    password2: qwerty
+    email: 'homersimpson@admin.com'
+    # db password
+    password3: password
