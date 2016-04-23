@@ -1,6 +1,8 @@
 
 # Database server settings
 db:
+    # or postgresql
+    db_type: mysql
     db_server: localhost
     db_user: root
     db_passwd: password

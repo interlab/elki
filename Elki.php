@@ -1,5 +1,7 @@
 <?php
 
+chdir(__DIR__);
+
 define( 't', time() );
 const d = __DIR__;
 
@@ -33,8 +35,24 @@ function is_dir_empty($dir)
     return (count(scandir($dir)) === 2);
 }
 
+function findError($pageCrawler)
+{
+    if ($pageCrawler->filter('div.errorbox')->count()) {
+        $pageCrawler->filter('div.errorbox strong')->each(function($node) {
+            echo $node->text(), "\n";
+        });
+
+        $pageCrawler->filter('div.errorbox div')->each(function($node) {
+            echo $node->text(), "\n";
+        });
+
+        die();
+    }
+}
+
 function printStep($pageCrawler)
 {
+    findError($pageCrawler);
     $pageCrawler->filter('#main_steps .stepcurrent')->each(function($node) {
         print $node->text()."\n";
     });
