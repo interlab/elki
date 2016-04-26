@@ -14,14 +14,18 @@ use \Symfony\Component\Yaml\Yaml;
 // http://onedev.net/post/417
 use Goutte\Client;
 
+// php path-to-Elki.php dirpath siteurl
+// php C:\apache\php\localhost\www\elki\Elki.php "C:\apache\php\localhost\www\elk107" "http://localhost/elk107"
+
 $zf = d . '/ElkArte_v1-0-7_install.zip';
 $url_zf = 'http://github.com/elkarte/Elkarte/releases/download/v1.0.7/ElkArte_v1-0-7_install.zip';
 $url_zf_sha1 = 'B1CF32F1C633AA6F4031B7D487459ECEF1E3750C';
-$extractdir = d . '/t1';
-$url = 'http://localhost/elki/t1/install.php';
-$siteurl = 'http://localhost/elki/t1';
+$extractdir =  isset($argv[1]) && is_dir($argv[1]) ? $argv[1] : d . '/t1';
 
-$config = Yaml::parse(file_get_contents('config.yml'));
+$siteurl = isset($argv[2]) ? $argv[2] : 'http://localhost/elki/t1';
+$url = $siteurl . '/install.php';
+
+$config = Yaml::parse(file_get_contents(__DIR__ . '/config.yml'));
 $db = array_map(function($a){ return str_replace('{{t}}', t, $a); }, $config['db']);
 $admin = $config['admin'];
 
