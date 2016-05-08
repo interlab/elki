@@ -45,7 +45,7 @@ function fixdberror($extractdir, $db)
             exit();
         }
 
-        $mysqli->query('ALTER TABLE `{db_prefix}log_online` CHANGE `ip` `ip` VARBINARY(16) NOT NULL;');
+        $mysqli->query('ALTER TABLE `'.$db['db_prefix'].'log_online` CHANGE `ip` `ip` VARBINARY(16) NOT NULL;');
         $mysqli->close();
     }
 }
@@ -214,4 +214,16 @@ print("Step 13: success create new message \n");
 
 // for elk < 1.0.8
 fixdberror($extractdir, $db);
-print('Step fix db error');
+print('Step 14: fix db error');
+
+// [step 15]
+print("Step 15: install fancybox addon \n");
+$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=servers');
+$form = $crawler->selectButton('Download')->form();
+$pageCrawler = $client->submit($form, [
+    'package' => 'https://github.com/Spuds/Elk_FancyBox/archive/master.zip',
+]);
+
+$pageCrawler->filter('p.infobox')->each(function($node) {
+    print "\n".$node->text()."\n";
+});
