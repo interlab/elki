@@ -29,10 +29,30 @@ $config = Yaml::parse(file_get_contents(__DIR__ . '/config.yml'));
 $db = array_map(function($a){ return str_replace('{{t}}', t, $a); }, $config['db']);
 $admin = $config['admin'];
 
+function fixdberror($extractdir, $db)
+{
+    if ('mysql' === $db['db_type']) {
+        $file = __DIR__ . '/Logging.php';
+        $newfile = $extractdir . '/sources/Logging.php';
+        if (!copy($file, $newfile)) {
+            echo "не удалось скопировать $file...\n";
+        }
+
+        $mysqli = new mysqli($db['db_server'], $db['db_user'], $db["db_passwd"], $db["db_name"]);
+
+        if (mysqli_connect_errno()) {
+            printf("Подключение не удалось: %s\n", mysqli_connect_error());
+            exit();
+        }
+
+        $mysqli->query('ALTER TABLE `{db_prefix}log_online` CHANGE `ip` `ip` VARBINARY(16) NOT NULL;');
+        $mysqli->close();
+    }
+}
 
 function is_dir_empty($dir)
 {
-    if (!is_readable($dir)) {
+    if ( ! is_readable($dir) ) {
         return null;
     }
 
@@ -192,4 +212,6 @@ $pageCrawler = $client->submit($form, [
 ]);
 print("Step 13: success create new message \n");
 
-
+// for elk < 1.0.8
+fixdberror($extractdir, $db);
+print('Step fix db error');
