@@ -11,6 +11,7 @@ use \Symfony\Component\Yaml\Yaml;
 
 // http://victor.4devs.io/en/web-scraping/scraping-data-with-goutte.html
 // http://symfony.com/doc/current/components/dom_crawler.html
+// http://docs.guzzlephp.org/en/latest/quickstart.html
 // http://onedev.net/post/417
 use Goutte\Client;
 
@@ -227,3 +228,15 @@ $pageCrawler = $client->submit($form, [
 $pageCrawler->filter('p.infobox')->each(function($node) {
     print "\n".$node->text()."\n";
 });
+
+$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=install;package=Elk_FancyBox.zip');
+$form = $crawler->selectButton('Install now')->form();
+$pageCrawler = $client->submit($form, []);
+
+// Fancybox addon: set settings
+$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=addonsettings;sa=fancybox');
+$form = $crawler->selectButton('Save')->form([
+    'fancybox_enabled' => '1'
+]);
+$pageCrawler = $client->submit($form, []);
+
