@@ -16,3 +16,7 @@ Edit config.yml
 ```composer install```
 
 ```php Elki.php```
+
+### Admin ###
+Login: Homer Simpson
+Password: qwerty
