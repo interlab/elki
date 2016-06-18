@@ -17,3 +17,5 @@ admin:
     email: 'homersimpson@admin.com'
     # db password
     password3: password
+    # 0 - Unknown, 1- Male, 2 - Female
+    gender: 1

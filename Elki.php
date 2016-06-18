@@ -219,7 +219,7 @@ $pageCrawler = $client->submit($form, [
     'attachment' => __DIR__ . '/homer-simpson.jpg',
     // 'avatar_choice' => 'external',
     // 'userpicpersonal' => 'http://avki.ru/avatar-simpsons/avki-ru-0041-ava-simpson.gif',
-    'gender' => '1' // 0 - Unknown, 1- Male, 2 - Female
+    'gender' => $admin['gender'],
 ]);
 // $fields = array("user" => "test");
 // $fields["file"] = fopen('/path/to/file', 'rb');
