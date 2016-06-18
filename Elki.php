@@ -30,6 +30,8 @@ $config = Yaml::parse(file_get_contents(__DIR__ . '/config.yml'));
 $db = array_map(function($a){ return str_replace('{{t}}', t, $a); }, $config['db']);
 $admin = $config['admin'];
 
+$step = 0;
+
 function fixdberror($extractdir, $db)
 {
     if ('mysql' === $db['db_type']) {
@@ -104,15 +106,16 @@ $client = new Client();
 $crawler = $client->request('GET', $url);
 printStep($crawler);
 
-// [step 2] Click #contbutt
+// [Step] Click #contbutt
 // $link = $crawler->selectLink('#contbutt')->link();
 // $crawler = $client->click($link);
 $buttonCrawler = $crawler->selectButton('Continue');
 $form = $buttonCrawler->form();
 $pageCrawler = $client->submit($form);
 printStep($pageCrawler);
+$step++;
 
-// [step 3]
+// [Step]
 $buttonCrawler = $pageCrawler->selectButton('Continue');
 $form = $buttonCrawler->form();
 // $form = $crawler->filter('form')->first();
@@ -121,8 +124,9 @@ $form = $buttonCrawler->form();
 // print_r($form->getPhpValues());
 $pageCrawler = $client->submit($form, $db);
 printStep($pageCrawler);
+$step++;
 
-// [step 4]
+// [Step]
 $buttonCrawler = $pageCrawler->selectButton('Continue');
 $form = $buttonCrawler->form();
 $pageCrawler = $client->submit($form, ['mbname' => 'Ёлки - Палки']);
@@ -130,43 +134,49 @@ printStep($pageCrawler);
 $pageCrawler->filter('.panel ul li')->each(function ($node) {
     print $node->text()."\n";
 });
+$step++;
 
-// [step 5]
+// [Step]
 $buttonCrawler = $pageCrawler->selectButton('Continue');
 $form = $buttonCrawler->form();
 $pageCrawler = $client->submit($form, []);
 printStep($pageCrawler);
+$step++;
 
-// [step 6]
+// [Step]
 $buttonCrawler = $pageCrawler->selectButton('Continue');
 $form = $buttonCrawler->form();
 $pageCrawler = $client->submit($form, $admin);
 printStep($pageCrawler);
+$step++;
 
-// [step 7]
+// [Step]
 unlink($extractdir . '/install.php');
+$step++;
 
 // Установка завершена.
 // Перейдём к настройкам.
 
-// [step 8]
+// [Step]
 // disable admin checks
 $client = new Client();
 $crawler = $client->request('GET', $siteurl);
 $form = $crawler->selectButton('Log in')->form();
 $pageCrawler = $client->submit($form, ['user' => $admin['username'], 'passwrd' => $admin['password1']]);
-print("Step 8: success log in on site \n");
+$step++;
+print("Step $step: success log in on site \n");
 
-// [step 9]
+// [Step]
 // Admin confirm password
 $crawler = $client->request('GET', $siteurl . '/index.php?action=admin');
 if ( $crawler->filter('#admin_login')->count() ) {
     $form = $crawler->selectButton('Log in')->form();
     $pageCrawler = $client->submit($form, ['admin_pass' => $admin['password1']]);
 }
-print("Step 9: success admin log in \n");
+$step++;
+print("Step $step: success admin log in \n");
 
-// [step 10]
+// [Step]
 // set new settings for admins and moderators
 $general_settings = $siteurl . '/index.php?action=admin;area=securitysettings;sa=general';
 $crawler = $client->request('GET', $general_settings);
@@ -176,9 +186,10 @@ $pageCrawler = $client->submit($form, [
     'securityDisable' => '1',
     'securityDisable_moderate' => '1',
 ]);
-print("Step 10: success set new settings for admins and moderators \n");
+$step++;
+print("Step $step: success set new settings for admins and moderators \n");
 
-// [step 11]
+// [Step]
 // Avatar settings
 $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=manageattachments;sa=avatars');
 $form = $crawler->selectButton('Save')->form();
@@ -186,9 +197,20 @@ $pageCrawler = $client->submit($form, [
     'avatar_max_width' => '120',
     'avatar_max_height' => '120',
 ]);
-print("Step 11: success set new avatar settings for all users \n");
+$step++;
+print("Step $step: success set new avatar settings for all users \n");
 
-// [step 12]
+// [Step]
+// HelpDisplay time taken to create every page
+$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=featuresettings;sa=layout');
+$form = $crawler->selectButton('Save')->form();
+$pageCrawler = $client->submit($form, [
+    'timeLoadPageEnable' => '1',
+]);
+$step++;
+print("Step $step : Enable show time taken to create every page \n");
+
+// [Step]
 // Upload avatar for admin-user
 $crawler = $client->request('GET', $siteurl . '/index.php?action=profile;area=forumprofile');
 $form = $crawler->selectButton('Change profile')->form();
@@ -202,23 +224,27 @@ $pageCrawler = $client->submit($form, [
 // $fields = array("user" => "test");
 // $fields["file"] = fopen('/path/to/file', 'rb');
 // $this->client->request("POST", $url, array('Content-Type => multipart/form-data'), array(), array(), $fields);
-print("Step 12: success change profile settings for admin-user \n");
+$step++;
+print("Step $step: success change profile settings for admin-user \n");
 
-// [step 13]
+// [Step]
 // Create first message
 $crawler = $client->request('GET', $siteurl . '/index.php?topic=1.0');
 $form = $crawler->selectButton('Post')->form();
 $pageCrawler = $client->submit($form, [
     'message' => 'Hello, all!',
 ]);
-print("Step 13: success create new message \n");
+$step++;
+print("Step $step: success create new message \n");
 
 // for elk < 1.0.8
 fixdberror($extractdir, $db);
-print('Step 14: fix db error');
+$step++;
+print("Step $step: fix db error \n");
 
-// [step 15]
-print("Step 15: install fancybox addon \n");
+// [Step]
+$step++;
+print("Step $step: install fancybox addon: ");
 $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=servers');
 $form = $crawler->selectButton('Download')->form();
 $pageCrawler = $client->submit($form, [
@@ -226,7 +252,7 @@ $pageCrawler = $client->submit($form, [
 ]);
 
 $pageCrawler->filter('p.infobox')->each(function($node) {
-    print "\n".$node->text()."\n";
+    print $node->text()."\n";
 });
 
 $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=install;package=Elk_FancyBox.zip');
