@@ -62,6 +62,16 @@ function is_dir_empty($dir)
     return (count(scandir($dir)) === 2);
 }
 
+function del_dir($dir)
+{
+    $files = array_diff(scandir($dir), ['.', '..']);
+    foreach ($files as $file) {
+        (is_dir("$dir/$file")) ? del_dir("$dir/$file") : unlink("$dir/$file");
+    }
+
+    return rmdir($dir);
+}
+
 function findError($pageCrawler)
 {
     if ($pageCrawler->filter('div.errorbox')->count()) {
@@ -146,7 +156,13 @@ $step++;
 // [Step]
 $buttonCrawler = $pageCrawler->selectButton('Continue');
 $form = $buttonCrawler->form();
-$pageCrawler = $client->submit($form, $admin);
+$pageCrawler = $client->submit($form, [
+    'username' => $admin['username'],
+    'password1' => $admin['password1'],
+    'password2' => $admin['password2'],
+    'password3' => $admin['password3'],
+    'email' => $admin['email'],
+]);
 printStep($pageCrawler);
 $step++;
 
@@ -164,7 +180,7 @@ $crawler = $client->request('GET', $siteurl);
 $form = $crawler->selectButton('Log in')->form();
 $pageCrawler = $client->submit($form, ['user' => $admin['username'], 'passwrd' => $admin['password1']]);
 $step++;
-print("Step $step: success log in on site \n");
+print("Step $step: log in on site \n");
 
 // [Step]
 // Admin confirm password
@@ -174,7 +190,7 @@ if ( $crawler->filter('#admin_login')->count() ) {
     $pageCrawler = $client->submit($form, ['admin_pass' => $admin['password1']]);
 }
 $step++;
-print("Step $step: success admin log in \n");
+print("Step $step: admin log in \n");
 
 // [Step]
 // set new settings for admins and moderators
@@ -187,7 +203,7 @@ $pageCrawler = $client->submit($form, [
     'securityDisable_moderate' => '1',
 ]);
 $step++;
-print("Step $step: success set new settings for admins and moderators \n");
+print("Step $step: set new settings for admins and moderators \n");
 
 // [Step]
 // Avatar settings
@@ -198,7 +214,7 @@ $pageCrawler = $client->submit($form, [
     'avatar_max_height' => '120',
 ]);
 $step++;
-print("Step $step: success set new avatar settings for all users \n");
+print("Step $step: set new avatar settings for all users \n");
 
 // [Step]
 // HelpDisplay time taken to create every page
@@ -208,7 +224,7 @@ $pageCrawler = $client->submit($form, [
     'timeLoadPageEnable' => '1',
 ]);
 $step++;
-print("Step $step : Enable show time taken to create every page \n");
+print("Step $step: Enable show time taken to create every page \n");
 
 // [Step]
 // Upload avatar for admin-user
@@ -217,25 +233,29 @@ $form = $crawler->selectButton('Change profile')->form();
 $pageCrawler = $client->submit($form, [
     'avatar_choice' => 'upload',
     'attachment' => __DIR__ . '/homer-simpson.jpg',
-    // 'avatar_choice' => 'external',
-    // 'userpicpersonal' => 'http://avki.ru/avatar-simpsons/avki-ru-0041-ava-simpson.gif',
     'gender' => $admin['gender'],
 ]);
 // $fields = array("user" => "test");
 // $fields["file"] = fopen('/path/to/file', 'rb');
 // $this->client->request("POST", $url, array('Content-Type => multipart/form-data'), array(), array(), $fields);
 $step++;
-print("Step $step: success change profile settings for admin-user \n");
+print("Step $step: сhange profile settings for admin-user \n");
 
 // [Step]
 // Create first message
-$crawler = $client->request('GET', $siteurl . '/index.php?topic=1.0');
+$crawler = $client->request('GET', $siteurl . '/index.php?action=post;topic=1.0');
 $form = $crawler->selectButton('Post')->form();
-$pageCrawler = $client->submit($form, [
-    'message' => 'Hello, all!',
-]);
+try {
+    $pageCrawler = $client->submit($form, [
+        'message' => 'Hello, all!',
+        'attachment' => [__DIR__ . '/cat.jpg'],
+    ]);
+} catch (\InvalidArgumentException $e) {
+    dump($e);
+    die;
+}
 $step++;
-print("Step $step: success create new message \n");
+print("Step $step: Сreate new message with attachment image \n");
 
 // for elk < 1.0.8
 fixdberror($extractdir, $db);
