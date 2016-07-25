@@ -13,7 +13,7 @@ use \Symfony\Component\Yaml\Yaml;
 // http://symfony.com/doc/current/components/dom_crawler.html
 // http://docs.guzzlephp.org/en/latest/quickstart.html
 // http://onedev.net/post/417
-use Goutte\Client;
+use \Goutte\Client;
 
 // php path-to-Elki.php dirpath siteurl
 // php C:\apache\php\localhost\www\elki\Elki.php "C:\apache\php\localhost\www\elk107" "http://localhost/elk107"
@@ -106,7 +106,7 @@ if ( ! file_exists($zf) ) {
 }
 
 if ( ! is_dir($extractdir) || is_dir_empty($extractdir)) {
-    $zip = new ZipArchive;
+    $zip = new \ZipArchive;
     $zip->open($zf);
     $zip->extractTo($extractdir);
     $zip->close();
@@ -139,7 +139,7 @@ $step++;
 // [Step]
 $buttonCrawler = $pageCrawler->selectButton('Continue');
 $form = $buttonCrawler->form();
-$pageCrawler = $client->submit($form, ['mbname' => 'Ёлки - Палки']);
+$pageCrawler = $client->submit($form, ['mbname' => $config['forum']['name']]);
 printStep($pageCrawler);
 $pageCrawler->filter('.panel ul li')->each(function ($node) {
     print $node->text()."\n";

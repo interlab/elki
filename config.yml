@@ -19,3 +19,9 @@ admin:
     password3: password
     # 0 - Unknown, 1- Male, 2 - Female
     gender: 1
+
+forum:
+    name: 'Ёлки - Палки'
+
+# https://bitbucket.org/interlab/elga/get/dev.zip
+# https://github.com/Spuds/Elk_FancyBox/archive/master.zip
