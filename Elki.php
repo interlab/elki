@@ -18,9 +18,11 @@ use \Goutte\Client;
 // php path-to-Elki.php dirpath siteurl
 // php C:\apache\php\localhost\www\elki\Elki.php "C:\apache\php\localhost\www\elk107" "http://localhost/elk107"
 
-$zf = d . '/ElkArte_v1-0-7_install.zip';
-$url_zf = 'http://github.com/elkarte/Elkarte/releases/download/v1.0.7/ElkArte_v1-0-7_install.zip';
-$url_zf_sha1 = 'B1CF32F1C633AA6F4031B7D487459ECEF1E3750C';
+$zf = d . '/ElkArte_install.zip';
+// $url_zf = 'http://github.com/elkarte/Elkarte/releases/download/v1.0.7/ElkArte_v1-0-7_install.zip';
+$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.0.9/ElkArte_v1-0-9_install.zip';
+// $url_zf_sha1 = 'B1CF32F1C633AA6F4031B7D487459ECEF1E3750C';
+$url_zf_sha1 = 'e2b9ad30ca4894fc9f359407b6d093f154801772';
 $extractdir =  isset($argv[1]) && is_dir($argv[1]) ? $argv[1] : d . '/t1';
 
 $siteurl = isset($argv[2]) ? $argv[2] : 'http://localhost/elki/t1';
@@ -98,9 +100,9 @@ function printStep($pageCrawler)
 if ( ! file_exists($zf) ) {
     print("Download ElkArte\n");
     file_put_contents($zf, fopen($url_zf, 'r'));
-    if (strtoupper(sha1_file($zf)) !== $url_zf_sha1) {
+    if (strtoupper(sha1_file($zf)) !== strtoupper($url_zf_sha1)) {
         echo strtoupper(sha1_file($zf));
-        echo "\n" . $url_zf_sha1 . "\n";
+        echo "\n" . strtoupper($url_zf_sha1) . "\n";
         die('Bad file!');
     }
 }
@@ -139,7 +141,7 @@ $step++;
 // [Step]
 $buttonCrawler = $pageCrawler->selectButton('Continue');
 $form = $buttonCrawler->form();
-$pageCrawler = $client->submit($form, ['mbname' => $config['forum']['name']]);
+$pageCrawler = $client->submit($form, ['mbname' => $config['forumname']]);
 printStep($pageCrawler);
 $pageCrawler->filter('.panel ul li')->each(function ($node) {
     print $node->text()."\n";
@@ -258,9 +260,14 @@ $step++;
 print("Step $step: Сreate new message with attachment image \n");
 
 // for elk < 1.0.8
-fixdberror($extractdir, $db);
-$step++;
-print("Step $step: fix db error \n");
+if (preg_match('/@version (\d+.\d+.\d+)/', file_get_contents($extractdir . '/Settings.php'), $m)) {
+    $elkversion = $m[1];
+    if (version_compare($elkversion, '1.0.8', '<')) {
+        fixdberror($extractdir, $db);
+        $step++;
+        print("Step $step: fix db error \n");
+    }
+}
 
 // [Step]
 $step++;
@@ -268,7 +275,7 @@ print("Step $step: install fancybox addon: ");
 $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=servers');
 $form = $crawler->selectButton('Download')->form();
 $pageCrawler = $client->submit($form, [
-    'package' => 'https://github.com/Spuds/Elk_FancyBox/archive/master.zip',
+    'package' => $config['fancyboxurl'],
 ]);
 
 $pageCrawler->filter('p.infobox')->each(function($node) {
