@@ -23,3 +23,15 @@ admin:
 forumname: 'Ёлки - Палки'
 fancyboxurl: 'https://github.com/Spuds/Elk_FancyBox/archive/master.zip'
 # https://bitbucket.org/interlab/elga/get/dev.zip
+
+demoboards:
+    # General Discussion: []
+    Resources:
+        - FAQ
+        - Tutorial
+    Support: []
+    Development: []
+    Extensions:
+        - Languages
+    Offtopic: []
+    LOL: []

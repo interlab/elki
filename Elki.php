@@ -23,14 +23,25 @@ $zf = d . '/ElkArte_install.zip';
 $url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.0.9/ElkArte_v1-0-9_install.zip';
 // $url_zf_sha1 = 'B1CF32F1C633AA6F4031B7D487459ECEF1E3750C';
 $url_zf_sha1 = 'e2b9ad30ca4894fc9f359407b6d093f154801772';
-$extractdir =  isset($argv[1]) && is_dir($argv[1]) ? $argv[1] : d . '/t1';
 
+// Extract directory
+if (isset($argv[1])) {
+    if (!is_dir($argv[1])) {
+        $extractdir = mkdir($argv[1]) ? $argv[1] : null;
+    } else {
+        $extractdir = $argv[1];
+    }
+}
+$extractdir = !empty($extractdir) ? $extractdir : d . '/t1';
+
+// Site url
 $siteurl = isset($argv[2]) ? $argv[2] : 'http://localhost/elki/t1';
 $url = $siteurl . '/install.php';
 
 $config = Yaml::parse(file_get_contents(__DIR__ . '/config.yml'));
 $db = array_map(function($a){ return str_replace('{{t}}', t, $a); }, $config['db']);
 $admin = $config['admin'];
+$demoboards = $config['demoboards'];
 
 $step = 0;
 
@@ -95,6 +106,51 @@ function printStep($pageCrawler)
     $pageCrawler->filter('#main_steps .stepcurrent')->each(function($node) {
         print $node->text()."\n";
     });
+}
+
+function createDemoBoards(array $boards, Client $client)
+{
+    global $siteurl;
+
+    // $faker = Faker\Factory::create();
+    // echo $faker->name;
+    // echo $faker->text;
+
+    foreach ($boards as $board => $childs) {
+        if (empty($bid)) {
+            $bid = 1;
+        }
+
+        $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=manageboards;sa=newboard;cat=1');
+        $form = $crawler->selectButton('Add Board')->form([
+            'board_name' => $board,
+            'desc' => '',
+            'placement' => 'after',
+            'board_order' => $bid,
+        ]);
+
+        $pageCrawler = $client->submit($form, []);
+        print("Create $board board.\n");
+
+        $link = $pageCrawler->selectLink($board)->link()->getUri();
+        preg_match('~board=(\d+)~iu', $link, $matches);
+        $bid = $matches[1];
+
+        if (!empty($childs)) {
+            foreach ($childs as $b) {
+                $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=manageboards;sa=newboard;cat=1');
+                $form = $crawler->selectButton('Add Board')->form([
+                    'board_name' => $b,
+                    'desc' => '',
+                    'placement' => 'child',
+                    'board_order' => $bid,
+                ]);
+
+                $pageCrawler = $client->submit($form, []);
+                print("Create $b child of $board.\n");
+            }
+        }
+    }
 }
 
 if ( ! file_exists($zf) ) {
@@ -228,6 +284,20 @@ $pageCrawler = $client->submit($form, [
 $step++;
 print("Step $step: Enable show time taken to create every page \n");
 
+
+// @TODO: http://localhost/elki/t1/index.php?action=admin;area=managesearch;sa=createmsgindex
+
+
+// [Step]
+// Maximum allowed post size
+$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=postsettings;sa=posts');
+$form = $crawler->selectButton('Save')->form();
+$pageCrawler = $client->submit($form, [
+    'max_messageLength' => '65535',
+]);
+$step++;
+print("Step $step: Maximum allowed post size set 65535 \n");
+
 // [Step]
 // Upload avatar for admin-user
 $crawler = $client->request('GET', $siteurl . '/index.php?action=profile;area=forumprofile');
@@ -260,7 +330,7 @@ $step++;
 print("Step $step: Сreate new message with attachment image \n");
 
 // for elk < 1.0.8
-if (preg_match('/@version (\d+.\d+.\d+)/', file_get_contents($extractdir . '/Settings.php'), $m)) {
+if (file_exists($extractdir . '/Settings.php') and preg_match('/@version (\d+.\d+.\d+)/', file_get_contents($extractdir . '/Settings.php'), $m)) {
     $elkversion = $m[1];
     if (version_compare($elkversion, '1.0.8', '<')) {
         fixdberror($extractdir, $db);
@@ -268,6 +338,8 @@ if (preg_match('/@version (\d+.\d+.\d+)/', file_get_contents($extractdir . '/Set
         print("Step $step: fix db error \n");
     }
 }
+
+createDemoBoards($demoboards, $client);
 
 // [Step]
 $step++;
