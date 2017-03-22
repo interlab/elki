@@ -2,8 +2,8 @@
 
 chdir(__DIR__);
 
-define( 't', time() );
-const d = __DIR__;
+define( 'CREATE_TIME', time() );
+const DEST_DIR = __DIR__;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -15,14 +15,15 @@ use \Symfony\Component\Yaml\Yaml;
 // http://onedev.net/post/417
 use \Goutte\Client;
 
-// php path-to-Elki.php dirpath siteurl
-// php C:\apache\php\localhost\www\elki\Elki.php "C:\apache\php\localhost\www\elk107" "http://localhost/elk107"
+global $mysqli, $db;
 
-$zf = d . '/ElkArte_install.zip';
-// $url_zf = 'http://github.com/elkarte/Elkarte/releases/download/v1.0.7/ElkArte_v1-0-7_install.zip';
-$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.0.9/ElkArte_v1-0-9_install.zip';
-// $url_zf_sha1 = 'B1CF32F1C633AA6F4031B7D487459ECEF1E3750C';
-$url_zf_sha1 = 'e2b9ad30ca4894fc9f359407b6d093f154801772';
+$zf = DEST_DIR . '/ElkArte_v1-1-beta4_install.zip';
+$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.1.0-beta.4/ElkArte_v1-1-beta4_install.zip';
+// $url_zf_sha1 = 'df3d4b5f4c84d86a7f52816cf33509d4681e842a';
+// $url_zf_sha1 = 'b4cf004897a3e3df15c13aed92053255465a66de';
+$url_zf_sha1 = '31f84d24231bf076551b52ad841b5a1d06041757';
+
+$use_custom_path = null;
 
 // Extract directory
 if (isset($argv[1])) {
@@ -31,44 +32,54 @@ if (isset($argv[1])) {
     } else {
         $extractdir = $argv[1];
     }
+	$use_custom_path = true;
+} else {
+	$use_custom_path = false;
 }
-$extractdir = !empty($extractdir) ? $extractdir : d . '/t1';
+
+$extractdir = !empty($extractdir) ? $extractdir : DEST_DIR . '/t1';
+// echo "\r\n",'$extractdir    ', $extractdir, "\r\n";
 
 // Site url
-$siteurl = isset($argv[2]) ? $argv[2] : 'http://localhost/elki/t1';
-$url = $siteurl . '/install.php';
+if ($use_custom_path && !isset($argv[2])) {
+	throw new \Exception('Url param not found!');
+}
+$siteurl = isset($argv[2]) ? $argv[2] : 'http://localhost/elki1-1/t1';
+$url = $siteurl . '/install/install.php'; // v1.1
+// echo "\r\n",'url: ', $url, "\r\n";
 
 $config = Yaml::parse(file_get_contents(__DIR__ . '/config.yml'));
-$db = array_map(function($a){ return str_replace('{{t}}', t, $a); }, $config['db']);
+
+$db = array_map(function($a){ return str_replace('{{t}}', CREATE_TIME, $a); }, $config['db']);
 $admin = $config['admin'];
 $demoboards = $config['demoboards'];
 
 $step = 0;
 
-function fixdberror($extractdir, $db)
+function get_db($dbsettings)
 {
-    if ('mysql' === $db['db_type']) {
-        $file = __DIR__ . '/Logging.php';
-        $newfile = $extractdir . '/sources/Logging.php';
-        if (!copy($file, $newfile)) {
-            echo "не удалось скопировать $file...\n";
-        }
+    static $load_db = null;
 
-        $mysqli = new mysqli($db['db_server'], $db['db_user'], $db["db_passwd"], $db["db_name"]);
+    if (!is_null($load_db)) {
+        return false;
+    }
+
+    if ('mysql' === $dbsettings['db_type']) {
+        $mysqli = new mysqli($dbsettings['db_server'], $dbsettings['db_user'], $dbsettings["db_passwd"], $dbsettings["db_name"]);
+        $load_db = true;
 
         if (mysqli_connect_errno()) {
             printf("Подключение не удалось: %s\n", mysqli_connect_error());
             exit();
         }
 
-        $mysqli->query('ALTER TABLE `'.$db['db_prefix'].'log_online` CHANGE `ip` `ip` VARBINARY(16) NOT NULL;');
-        $mysqli->close();
+        return $mysqli;
     }
 }
 
 function is_dir_empty($dir)
 {
-    if ( ! is_readable($dir) ) {
+    if (!is_readable($dir)) {
         return null;
     }
 
@@ -116,8 +127,11 @@ function createDemoBoards(array $boards, Client $client)
     // echo $faker->name;
     // echo $faker->text;
 
+    $bid = 0;
     foreach ($boards as $board => $childs) {
-        if (empty($bid)) {
+        // sleep(3);
+
+        if ( ! $bid ) {
             $bid = 1;
         }
 
@@ -132,12 +146,17 @@ function createDemoBoards(array $boards, Client $client)
         $pageCrawler = $client->submit($form, []);
         print("Create $board board.\n");
 
-        $link = $pageCrawler->selectLink($board)->link()->getUri();
-        preg_match('~board=(\d+)~iu', $link, $matches);
-        $bid = $matches[1];
+
+        // $link = $pageCrawler->selectLink($board)->link()->getUri();
+        // preg_match('~board=(\d+)~iu', $link, $matches);
+        // $bid = $matches[1];
+        $bid = countBoards();
+
+        // dump($pageCrawler);
 
         if (!empty($childs)) {
             foreach ($childs as $b) {
+                // sleep(3);
                 $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=manageboards;sa=newboard;cat=1');
                 $form = $crawler->selectButton('Add Board')->form([
                     'board_name' => $b,
@@ -148,9 +167,89 @@ function createDemoBoards(array $boards, Client $client)
 
                 $pageCrawler = $client->submit($form, []);
                 print("Create $b child of $board.\n");
+
+                /*
+                $link2 = $pageCrawler->selectLink($b)->link()->getUri();
+                preg_match('~board=(\d+)~iu', $link2, $matches2);
+
+                if (!isset($matches2[1])) {
+                    file_put_contents(__DIR__.'/temp-test/error-board.html', $pageCrawler->html());
+                    continue;
+                }
+                $bid2 = $matches2[1];
+                // echo $b, ' ', $link2, ' ', $bid2, "\n";
+                */
             }
         }
     }
+}
+
+function createDemoPost($idboard, Client $client)
+{
+    global $scripturl, $siteurl;
+    
+    sleep(3);
+
+    // https://github.com/fzaninotto/Faker
+    $faker = Faker\Factory::create();
+
+    $crawler = $client->request('GET', $siteurl . '/index.php?action=post;board=' . intval($idboard) . '.0');
+    $form = $crawler->selectButton('Post')->form();
+    $s = substr($faker->text, 0, 70);
+    $post = $faker->text;
+    try {
+        $pageCrawler = $client->submit($form, [
+            'subject' => $s,
+            'message' => $post,
+            // 'attachment' => [__DIR__ . '/cat.jpg'],
+        ]);
+
+        if ($pageCrawler->filter('#post_error_list')->count()) {
+            $pageCrawler->filter('#post_error_list li')->each(function($node) {
+                echo 'Error! ', $node->text(), "\n";
+                file_put_contents(__DIR__.'/temp-test/post-' . $s . '.html', $pageCrawler->html());
+            });
+            die;
+        }
+
+        if ($pageCrawler->filter('#attach_generic_error_list')->count()) {
+            $pageCrawler->filter('#attach_generic_error_list li')->each(function($node) {
+                echo 'Error! ', $node->text(), "\n";
+                file_put_contents(__DIR__.'/temp-test/post-' . $s . '.html', $pageCrawler->html());
+            });
+            die;
+        }
+
+        if ($pageCrawler->filter('#fatal_error')->count()) {
+            $pageCrawler->filter('#fatal_error div.errorbox')->each(function($node) {
+                echo 'Error! ', $node->text(), "\n";
+                file_put_contents(__DIR__.'/temp-test/post-' . $s . '.html', $pageCrawler->html());
+            });
+            die;
+        }
+
+    } catch (\InvalidArgumentException $e) {
+        dump($e);
+        die;
+    }
+    finally {
+        echo "Create new post: ", substr($s, 0, 10), "... \n";
+    }
+}
+
+function countBoards()
+{
+    global $mysqli, $db;
+
+    $result = $mysqli->query('SELECT COUNT(*) FROM '.$db['db_prefix'].'boards LIMIT 1');
+    $total = 0;
+    if ($result) {
+        $total = $result->fetch_row()[0];
+        $result->free();
+    }
+    //$mysqli->close();
+
+    return $total;
 }
 
 if ( ! file_exists($zf) ) {
@@ -200,7 +299,7 @@ $form = $buttonCrawler->form();
 $pageCrawler = $client->submit($form, ['mbname' => $config['forumname']]);
 printStep($pageCrawler);
 $pageCrawler->filter('.panel ul li')->each(function ($node) {
-    print $node->text()."\n";
+	print $node->text()."\n";
 });
 $step++;
 
@@ -215,17 +314,17 @@ $step++;
 $buttonCrawler = $pageCrawler->selectButton('Continue');
 $form = $buttonCrawler->form();
 $pageCrawler = $client->submit($form, [
-    'username' => $admin['username'],
-    'password1' => $admin['password1'],
-    'password2' => $admin['password2'],
-    'password3' => $admin['password3'],
-    'email' => $admin['email'],
+	'username' => $admin['username'],
+	'password1' => $admin['password1'],
+	'password2' => $admin['password2'],
+	'password3' => $admin['password3'],
+	'email' => $admin['email'],
 ]);
 printStep($pageCrawler);
 $step++;
 
 // [Step]
-unlink($extractdir . '/install.php');
+del_dir($extractdir . '/install/');
 $step++;
 
 // Установка завершена.
@@ -244,8 +343,8 @@ print("Step $step: log in on site \n");
 // Admin confirm password
 $crawler = $client->request('GET', $siteurl . '/index.php?action=admin');
 if ( $crawler->filter('#admin_login')->count() ) {
-    $form = $crawler->selectButton('Log in')->form();
-    $pageCrawler = $client->submit($form, ['admin_pass' => $admin['password1']]);
+	$form = $crawler->selectButton('Log in')->form();
+	$pageCrawler = $client->submit($form, ['admin_pass' => $admin['password1']]);
 }
 $step++;
 print("Step $step: admin log in \n");
@@ -256,9 +355,9 @@ $general_settings = $siteurl . '/index.php?action=admin;area=securitysettings;sa
 $crawler = $client->request('GET', $general_settings);
 $form = $crawler->selectButton('Save')->form();
 $pageCrawler = $client->submit($form, [
-    'auto_admin_session' => '1',
-    'securityDisable' => '1',
-    'securityDisable_moderate' => '1',
+	'auto_admin_session' => '1',
+	'securityDisable' => '1',
+	'securityDisable_moderate' => '1',
 ]);
 $step++;
 print("Step $step: set new settings for admins and moderators \n");
@@ -268,8 +367,8 @@ print("Step $step: set new settings for admins and moderators \n");
 $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=manageattachments;sa=avatars');
 $form = $crawler->selectButton('Save')->form();
 $pageCrawler = $client->submit($form, [
-    'avatar_max_width' => '120',
-    'avatar_max_height' => '120',
+	'avatar_max_width' => '120',
+	'avatar_max_height' => '120',
 ]);
 $step++;
 print("Step $step: set new avatar settings for all users \n");
@@ -284,9 +383,29 @@ $pageCrawler = $client->submit($form, [
 $step++;
 print("Step $step: Enable show time taken to create every page \n");
 
+// [Step]
+// Check extensions for attachments
+$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=manageattachments;sa=attachments');
+$form = $crawler->selectButton('Save')->form();
+$pageCrawler = $client->submit($form, [
+    'attachmentCheckExtensions' => '1',
+]);
+$step++;
+print("Step $step: Attachments: enable check extensions \n");
+
+// [Step]
+// Show attachments for guests
+$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=permissions;sa=modify;group=-1');
+$form = $crawler->selectButton('Save changes')->form();
+$pageCrawler = $client->submit($form, [
+    'perm[board][view_attachments]' => 'on',
+]);
+$step++;
+print("Step $step: Attachments: show for guests \n");
 
 // @TODO: http://localhost/elki/t1/index.php?action=admin;area=managesearch;sa=createmsgindex
 
+// echo "\r\n", __LINE__, "\r\n";
 
 // [Step]
 // Maximum allowed post size
@@ -305,21 +424,30 @@ $form = $crawler->selectButton('Change profile')->form();
 $pageCrawler = $client->submit($form, [
     'avatar_choice' => 'upload',
     'attachment' => __DIR__ . '/homer-simpson.jpg',
-    'gender' => $admin['gender'],
+    'customfield[cust_gender]' => $admin['gender'], // v1.1
 ]);
 // $fields = array("user" => "test");
 // $fields["file"] = fopen('/path/to/file', 'rb');
 // $this->client->request("POST", $url, array('Content-Type => multipart/form-data'), array(), array(), $fields);
 $step++;
-print("Step $step: сhange profile settings for admin-user \n");
+print("Step $step: change profile settings for admin-user \n");
 
 // [Step]
 // Create first message
 $crawler = $client->request('GET', $siteurl . '/index.php?action=post;topic=1.0');
 $form = $crawler->selectButton('Post')->form();
+$m = 'Hello, all!
+
+[html5audio]http://lubeh.matvey.ru/mp3/140.mp3[/html5audio]
+
+[html5video]http://f.tiraspol.me/video/2013/12/24/orphans.webm[/html5video]
+
+[html5video]http://simaru.tk/files/video/zubov.mp4[/html5video]
+
+[html5video]http://tiraspol.me/files/html5test/bus.ogg[/html5video]';
 try {
     $pageCrawler = $client->submit($form, [
-        'message' => 'Hello, all!',
+        'message' => $m,
         'attachment' => [__DIR__ . '/cat.jpg'],
     ]);
 } catch (\InvalidArgumentException $e) {
@@ -327,41 +455,47 @@ try {
     die;
 }
 $step++;
-print("Step $step: Сreate new message with attachment image \n");
+print("Step $step: Create new message with attachment image \n");
 
-// for elk < 1.0.8
-if (file_exists($extractdir . '/Settings.php') and preg_match('/@version (\d+.\d+.\d+)/', file_get_contents($extractdir . '/Settings.php'), $m)) {
-    $elkversion = $m[1];
-    if (version_compare($elkversion, '1.0.8', '<')) {
-        fixdberror($extractdir, $db);
-        $step++;
-        print("Step $step: fix db error \n");
-    }
-}
+$mysqli = get_db($db);
+// dump($mysqli);
 
 createDemoBoards($demoboards, $client);
+// die;
+
+function installFancyboxAddon($client, $siteurl, $config)
+{
+	// $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=servers');
+	// $form = $crawler->selectButton('Download')->form();
+	// $pageCrawler = $client->submit($form, [
+		// 'package' => $config['fancyboxurl'],
+	// ]);
+	$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=upload');
+	$form = $crawler->selectButton('Upload')->form();
+	$pageCrawler = $client->submit($form, [
+		'package' => $config['fancyboxfile'],
+	]);
+
+	$pageCrawler->filter('p.infobox')->each(function($node) {
+		print $node->text()."\n";
+	});
+
+	// $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=install;package=Elk_FancyBox.zip');
+	$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=install;ve=1.0;package=Elk_FancyBox-master.zip'); // emulating mode for v1.1
+	$form = $crawler->selectButton('Install now')->form();
+	$pageCrawler = $client->submit($form, []);
+
+	// Fancybox addon: set settings
+	$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=addonsettings;sa=fancybox');
+	$form = $crawler->selectButton('Save')->form([
+		'fancybox_enabled' => '1'
+	]);
+	$pageCrawler = $client->submit($form, []);
+}
 
 // [Step]
 $step++;
 print("Step $step: install fancybox addon: ");
-$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=servers');
-$form = $crawler->selectButton('Download')->form();
-$pageCrawler = $client->submit($form, [
-    'package' => $config['fancyboxurl'],
-]);
+installFancyboxAddon($client, $siteurl, $config);
 
-$pageCrawler->filter('p.infobox')->each(function($node) {
-    print $node->text()."\n";
-});
-
-$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=install;package=Elk_FancyBox.zip');
-$form = $crawler->selectButton('Install now')->form();
-$pageCrawler = $client->submit($form, []);
-
-// Fancybox addon: set settings
-$crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=addonsettings;sa=fancybox');
-$form = $crawler->selectButton('Save')->form([
-    'fancybox_enabled' => '1'
-]);
-$pageCrawler = $client->submit($form, []);
 

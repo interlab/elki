@@ -6,7 +6,7 @@ db:
     db_server: localhost
     db_user: root
     db_passwd: password
-    db_name: 'elki1_{{t}}'
+    db_name: 'elki1_1_{{t}}'
     db_prefix: 'elk_{{t}}_'
 
 # admin user
@@ -21,7 +21,9 @@ admin:
     gender: 1
 
 forumname: 'Ёлки - Палки'
+
 fancyboxurl: 'https://github.com/Spuds/Elk_FancyBox/archive/master.zip'
+fancyboxfile: 'Elk_FancyBox-master.zip'
 # https://bitbucket.org/interlab/elga/get/dev.zip
 
 demoboards:
