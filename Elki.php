@@ -16,25 +16,25 @@ use \Goutte\Client;
 
 global $mysqli, $db;
 
-$zf = __DIR__ . '/ElkArte_v1-1-beta4_install.zip';
-$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.1.0-beta.4/ElkArte_v1-1-beta4_install.zip';
-$url_zf_sha1 = '31f84d24231bf076551b52ad841b5a1d06041757';
+$zf = __DIR__ . '/ElkArte_install.zip';
+$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.1-RC1/ElkArte_v1-1-RC1_install.zip';
+$url_zf_sha1 = 'ee73bca0fb020f1920a2d6d8762c68dc0f0e3e9d';
 
 $use_custom_path = null;
 
 // Extract directory
 if (isset($argv[1])) {
-    if (!is_dir($argv[1])) {
-        $extractdir = mkdir($argv[1]) ? $argv[1] : null;
-    } else {
-        $extractdir = $argv[1];
-    }
     $use_custom_path = true;
+    $extractdir = rtrim($argv[1], '/');
+    if (!is_dir($extractdir)) {
+        if (!mkdir($extractdir))
+            throw new \Exception('Directory failed created!');
+    }
 } else {
     $use_custom_path = false;
+    $extractdir = __DIR__ . '/t1';
 }
 
-$extractdir = !empty($extractdir) ? $extractdir : __DIR__ . '/t1';
 // echo "\r\n",'$extractdir    ', $extractdir, "\r\n";
 
 // Site url
