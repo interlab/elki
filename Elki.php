@@ -19,22 +19,28 @@ use \Goutte\Client;
 // php C:\apache\php\localhost\www\elki\Elki.php "C:\apache\php\localhost\www\elk107" "http://localhost/elk107"
 
 $zf = d . '/ElkArte_install.zip';
-// $url_zf = 'http://github.com/elkarte/Elkarte/releases/download/v1.0.7/ElkArte_v1-0-7_install.zip';
-$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.0.9/ElkArte_v1-0-9_install.zip';
-// $url_zf_sha1 = 'B1CF32F1C633AA6F4031B7D487459ECEF1E3750C';
-$url_zf_sha1 = 'e2b9ad30ca4894fc9f359407b6d093f154801772';
+$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.0.10/ElkArte_v1-0-10_install.zip';
+$url_zf_sha1 = '05c69eb61e927942ee163b681a408c3c1353e2cf';
+
+$use_custom_path = null;
 
 // Extract directory
 if (isset($argv[1])) {
-    if (!is_dir($argv[1])) {
-        $extractdir = mkdir($argv[1]) ? $argv[1] : null;
-    } else {
-        $extractdir = $argv[1];
+    $extractdir = rtrim($argv[1], '/');
+    if (!is_dir($extractdir)) {
+        if (!mkdir($extractdir))
+            throw new \Exception('Directory failed created!');
     }
+    $use_custom_path = true;
+} else {
+    $use_custom_path = false;
 }
 $extractdir = !empty($extractdir) ? $extractdir : d . '/t1';
 
 // Site url
+if ($use_custom_path && !isset($argv[2])) {
+    throw new \Exception('Url param not found!');
+}
 $siteurl = isset($argv[2]) ? $argv[2] : 'http://localhost/elki/t1';
 $url = $siteurl . '/install.php';
 
@@ -116,6 +122,7 @@ function createDemoBoards(array $boards, Client $client)
     // echo $faker->name;
     // echo $faker->text;
 
+    $bid = 0;
     foreach ($boards as $board => $childs) {
         if (empty($bid)) {
             $bid = 1;
@@ -163,7 +170,9 @@ if ( ! file_exists($zf) ) {
     }
 }
 
-if ( ! is_dir($extractdir) || is_dir_empty($extractdir)) {
+if ( ! is_dir($extractdir) || is_dir_empty($extractdir) ||
+    (!is_file($extractdir.'/Settings.php') && !is_file($extractdir.'/index.php'))
+) {
     $zip = new \ZipArchive;
     $zip->open($zf);
     $zip->extractTo($extractdir);
