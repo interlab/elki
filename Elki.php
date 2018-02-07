@@ -17,7 +17,7 @@ use \Goutte\Client;
 global $mysqli, $db;
 
 $zf = __DIR__ . '/ElkArte_install.zip';
-$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.1.0/ElkArte_v1-1-1_install.zip';
+$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.1.1/ElkArte_v1-1-1_install.zip';
 $url_zf_sha1 = '5E969A06AFDD86184428F5C549E925334563E7E0';
 
 $use_custom_path = false;
