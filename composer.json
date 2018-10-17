@@ -1,8 +1,17 @@
 {
+    "name": "interlab/elki",
+    "type": "utility for elkarte",
     "require": {
-        "fabpot/goutte": "^3.1",
-        "symfony/var-dumper": "^3",
-        "corneltek/getoptionkit": "~2",
-        "symfony/yaml": "^3"
-    }
+        "fabpot/goutte": "^3.2",
+        "symfony/var-dumper": "^4.1",
+        "corneltek/getoptionkit": "^2.6",
+        "symfony/yaml": "^4.1"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "inter",
+            "email": "ytkin3000@gmail.com"
+        }
+    ]
 }
