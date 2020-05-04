@@ -19,6 +19,6 @@ Edit config.yml
 
 ```php Elki.php F:\apache\php\localhost\www\elki1-1\t3 http://localhost/elki1-1/t3```
 
-#### Admin User ####
+### Admin User ###
 - username: Homer Simpson
 - password: qwerty
