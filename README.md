@@ -17,8 +17,8 @@ Edit config.yml
 
 ```composer install```
 
-```php Elki.php```
+```php Elki.php F:\apache\php\localhost\www\elki1-1\t3 http://localhost/elki1-1/t3```
 
-### Admin User ###
-Login: Homer Simpson
-Password: qwerty
+#### Admin User ####
+- username: Homer Simpson
+- password: qwerty

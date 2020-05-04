@@ -17,8 +17,8 @@ use \Goutte\Client;
 global $mysqli, $db;
 
 $zf = __DIR__ . '/ElkArte_install.zip';
-$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.1.5/ElkArte_v1-1-5_install.zip';
-$url_zf_sha1 = '966B5DDC51432E9125CE55332E69216F66619FCC';
+$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.1.6/ElkArte_v1-1-6_install.zip';
+$url_zf_sha1 = '8339313792F0FAB1A9AE3FD506874215DDF229C8';
 
 $use_custom_path = false;
 
@@ -27,11 +27,15 @@ if (isset($argv[1])) {
     $use_custom_path = true;
     $extractdir = rtrim($argv[1], '/');
     if (!is_dir($extractdir)) {
-        if (!mkdir($extractdir))
+        if (!mkdir($extractdir)) {
             throw new \Exception('Directory failed created!');
+        }
     }
 } else {
-    $extractdir = __DIR__ . '/t1';
+    $extractdir = __DIR__ . '/t11';
+    if (is_dir($extractdir) && file_exists($extractdir.'/index.php')) {
+        throw new \Exception('Directory "'.$extractdir.'" not empty!');
+    }
 }
 // echo "\r\n",'$extractdir    ', $extractdir, "\r\n";
 
@@ -39,7 +43,7 @@ if (isset($argv[1])) {
 if ($use_custom_path && !isset($argv[2])) {
     throw new \Exception('Url param not found!');
 }
-$siteurl = isset($argv[2]) ? $argv[2] : 'http://localhost/elki1-1/t1';
+$siteurl = isset($argv[2]) ? $argv[2] : 'http://localhost/elki1-1/t11';
 $url = $siteurl . '/install/install.php'; // v1.1
 // echo "\r\n",'url: ', $url, "\r\n";
 
