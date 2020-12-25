@@ -1,5 +1,11 @@
 <?php
 
+// Time flies, eh?
+// run:
+// php Elki.php F:\apache\php\localhost\www\elki1-1\t5 http://localhost/elki1-1/t5/
+
+error_reporting(-1);
+
 chdir(__DIR__);
 
 define( 'CREATE_TIME', time() );
@@ -72,6 +78,17 @@ if ( ! is_dir($extractdir) || is_dir_empty($extractdir)) {
     $zip->open($zf);
     $zip->extractTo($extractdir);
     $zip->close();
+}
+
+// fix for 1.1.6
+if ($url_zf_sha1 === '8339313792F0FAB1A9AE3FD506874215DDF229C8') {
+    unlink($extractdir . '/sources/admin/ManageAttachments.controller.php');
+    if (!copy(
+        __DIR__ . '/fix/1.1.6/ManageAttachments.controller.php',
+        $extractdir . '/sources/admin/ManageAttachments.controller.php'
+    )) {
+        die('не удалось скопировать ManageAttachments.controller.php');
+    }
 }
 
 $client = new Client();
@@ -243,13 +260,7 @@ $crawler = $client->request('GET', $siteurl . '/index.php?action=post;topic=1.0'
 $form = $crawler->selectButton('Post')->form();
 $m = 'Hello, all!
 
-[html5audio]http://lubeh.matvey.ru/mp3/140.mp3[/html5audio]
-
-[html5video]http://f.tiraspol.me/video/2013/12/24/orphans.webm[/html5video]
-
-[html5video]http://simaru.tk/files/video/zubov.mp4[/html5video]
-
-[html5video]http://tiraspol.me/files/html5test/bus.ogg[/html5video]';
+[html5audio]http://lubeh.matvey.ru/mp3/140.mp3[/html5audio]';
 try {
     $pageCrawler = $client->submit($form, [
         'message' => $m,
