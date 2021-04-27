@@ -23,8 +23,8 @@ use \Goutte\Client;
 global $mysqli, $db;
 
 $zf = __DIR__ . '/ElkArte_install.zip';
-$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.1.6/ElkArte_v1-1-6_install.zip';
-$url_zf_sha1 = '8339313792F0FAB1A9AE3FD506874215DDF229C8';
+$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/1.1.7/ElkArte_v1-1-7_install.zip';
+$url_zf_sha1 = '40A09349DCC9C61247CB93BFFBC9C19D0A48D695';
 
 $use_custom_path = false;
 
@@ -81,6 +81,7 @@ if ( ! is_dir($extractdir) || is_dir_empty($extractdir)) {
 }
 
 // fix for 1.1.6
+/*
 if ($url_zf_sha1 === '8339313792F0FAB1A9AE3FD506874215DDF229C8') {
     unlink($extractdir . '/sources/admin/ManageAttachments.controller.php');
     if (!copy(
@@ -90,6 +91,7 @@ if ($url_zf_sha1 === '8339313792F0FAB1A9AE3FD506874215DDF229C8') {
         die('не удалось скопировать ManageAttachments.controller.php');
     }
 }
+*/
 
 $client = new Client();
 $crawler = $client->request('GET', $url);
@@ -211,6 +213,8 @@ $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=mana
 $form = $crawler->selectButton('Save')->form();
 $pageCrawler = $client->submit($form, [
     'attachmentCheckExtensions' => '1',
+    'attachment_inline_enabled' => '1',
+    'attachment_inline_quotes' => '1',
 ]);
 $step++;
 print("Step $step: Attachments: enable check extensions \n");
@@ -277,11 +281,12 @@ $mysqli = get_db($db);
 // dump($mysqli);
 
 createDemoBoards($demoboards, $client);
-// die;
+
+die;
 
 // [Step]
-$step++;
-print("Step $step: install fancybox addon: ");
-installFancyboxAddon($client, $siteurl, $config);
+// $step++;
+// print("Step $step: install fancybox addon: ");
+// installFancyboxAddon($client, $siteurl, $config);
 
 
