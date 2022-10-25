@@ -65,10 +65,45 @@ function printStep($pageCrawler)
     });
 }
 
-function createDemoBoards(array $boards, Client $client)
+function getLastParentBoard()
+{
+    global $mysqli, $db;
+
+    $result = $mysqli->query('SELECT MAX(id_board) FROM '.$db['db_prefix'].'boards WHERE child_level = 0 LIMIT 1');
+    $total = 0;
+    if ($result) {
+        $total = $result->fetch_row()[0];
+        $result->free();
+    }
+    //$mysqli->close();
+
+    return $total;
+}
+
+function createBoard($config, Client $client, $url, $name, $pos, int $bid)
+{
+    $crawler = $client->request('GET', $url);
+    $form = $crawler->selectButton('Add Board')->form([
+        'board_name' => $name,
+        'desc' => '',
+        'placement' => $pos,
+        'board_order' => $bid,
+    ]);
+
+    $pageCrawler = $client->submit($form, []);
+
+    if ($config['faketopics']['create']) {
+        for ($i = 0; $i < $config['faketopics']['num']; $i++) {
+            createDemoPost($bid + 1, $client);
+        }
+    }
+}
+
+function createDemoBoards($config, Client $client)
 {
     global $siteurl;
 
+    $boards = $config['demoboards'];
     // $faker = Faker\Factory::create();
     // echo $faker->name;
     // echo $faker->text;
@@ -76,42 +111,28 @@ function createDemoBoards(array $boards, Client $client)
     $bid = 0;
     foreach ($boards as $board => $childs) {
         // sleep(3);
-
-        if ( ! $bid ) {
-            $bid = 1;
-        }
-
-        $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=manageboards;sa=newboard;cat=1');
-        $form = $crawler->selectButton('Add Board')->form([
-            'board_name' => $board,
-            'desc' => '',
-            'placement' => 'after',
-            'board_order' => $bid,
-        ]);
-
-        $pageCrawler = $client->submit($form, []);
+        $bid = getLastParentBoard();
+        createBoard(
+            $config, $client,
+            $siteurl . '/index.php?action=admin;area=manageboards;sa=newboard;cat=1',
+            $board, 'after', $bid
+        );
         print("Create $board board.\n");
-
-
+        $bid++;
         // $link = $pageCrawler->selectLink($board)->link()->getUri();
         // preg_match('~board=(\d+)~iu', $link, $matches);
         // $bid = $matches[1];
-        $bid = countBoards();
 
         // dump($pageCrawler);
 
         if (!empty($childs)) {
             foreach ($childs as $b) {
                 // sleep(3);
-                $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=manageboards;sa=newboard;cat=1');
-                $form = $crawler->selectButton('Add Board')->form([
-                    'board_name' => $b,
-                    'desc' => '',
-                    'placement' => 'child',
-                    'board_order' => $bid,
-                ]);
-
-                $pageCrawler = $client->submit($form, []);
+                createBoard(
+                    $config, $client,
+                    $siteurl . '/index.php?action=admin;area=manageboards;sa=newboard;cat=1',
+                    $b, 'child', $bid
+                );
                 print("Create $b child of $board.\n");
 
                 /*
@@ -127,19 +148,21 @@ function createDemoBoards(array $boards, Client $client)
                 */
             }
         }
+
+        // echo $bid, "\n";
     }
 }
 
 function createDemoPost($idboard, Client $client)
 {
     global $scripturl, $siteurl;
-    
+
     sleep(3);
 
     // https://github.com/fzaninotto/Faker
     $faker = Faker\Factory::create();
 
-    $crawler = $client->request('GET', $siteurl . '/index.php?action=post;board=' . intval($idboard) . '.0');
+    $crawler = $client->request('GET', $siteurl . '/index.php?action=post;board=' . $idboard . '.0');
     $form = $crawler->selectButton('Post')->form();
     $s = substr($faker->text, 0, 70);
     $post = $faker->text;
@@ -183,21 +206,6 @@ function createDemoPost($idboard, Client $client)
     }
 }
 
-function countBoards()
-{
-    global $mysqli, $db;
-
-    $result = $mysqli->query('SELECT COUNT(*) FROM '.$db['db_prefix'].'boards LIMIT 1');
-    $total = 0;
-    if ($result) {
-        $total = $result->fetch_row()[0];
-        $result->free();
-    }
-    //$mysqli->close();
-
-    return $total;
-}
-
 function installFancyboxAddon($client, $siteurl, $config)
 {
     // $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=servers');
@@ -208,7 +216,7 @@ function installFancyboxAddon($client, $siteurl, $config)
     $crawler = $client->request('GET', $siteurl . '/index.php?action=admin;area=packages;sa=upload');
     $form = $crawler->selectButton('Upload')->form();
     $pageCrawler = $client->submit($form, [
-        'package' => $config['fancyboxfile'],
+        'package' => $config['fancybox']['file'],
     ]);
 
     $pageCrawler->filter('p.infobox')->each(function($node) {

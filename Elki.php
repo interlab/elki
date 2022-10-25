@@ -2,7 +2,7 @@
 
 // Time flies, eh?
 // run:
-// php Elki.php F:\apache\php\localhost\www\elki1-1\t5 http://localhost/elki1-1/t5/
+// php Elki.php C:\apache\php\localhost\www\elki1-1\t5 http://localhost/elki1-1/t5/
 
 error_reporting(-1);
 
@@ -23,8 +23,8 @@ use \Goutte\Client;
 global $mysqli, $db;
 
 $zf = __DIR__ . '/ElkArte_install.zip';
-$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/1.1.7/ElkArte_v1-1-7_install.zip';
-$url_zf_sha1 = '40A09349DCC9C61247CB93BFFBC9C19D0A48D695';
+$url_zf = 'https://github.com/elkarte/Elkarte/releases/download/v1.1.8/ElkArte_v1-1-8_install.zip';
+$url_zf_sha1 = '0EBE475E13D4B3AB48C317FBFE48F61B33B2EF45';
 
 $use_custom_path = false;
 
@@ -280,13 +280,14 @@ print("Step $step: Create new message with attachment image \n");
 $mysqli = get_db($db);
 // dump($mysqli);
 
-createDemoBoards($demoboards, $client);
-
-die;
+if (!empty($config['demoboards'])) {
+    createDemoBoards($config, $client);
+}
 
 // [Step]
-// $step++;
-// print("Step $step: install fancybox addon: ");
-// installFancyboxAddon($client, $siteurl, $config);
-
+if ($config['fancybox']['install']) {
+    $step++;
+    print("Step $step: install fancybox addon: ");
+    installFancyboxAddon($client, $siteurl, $config);
+}
 

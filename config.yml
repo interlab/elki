@@ -22,10 +22,6 @@ admin:
 
 forumname: 'Ёлки - Палки'
 
-fancyboxurl: 'https://github.com/Spuds/Elk_FancyBox/archive/master.zip'
-fancyboxfile: 'Elk_FancyBox-master.zip'
-# https://bitbucket.org/interlab/elga/get/dev.zip
-
 demoboards:
     # General Discussion: []
     Resources:
@@ -37,3 +33,14 @@ demoboards:
         - Languages
     Offtopic: []
     LOL: []
+
+fancybox:
+    install: true
+    url: 'https://github.com/Spuds/Elk_FancyBox/archive/master.zip'
+    file: 'Elk_FancyBox-master.zip'
+
+# https://bitbucket.org/interlab/elga/get/dev.zip
+
+faketopics:
+    create: true
+    num: 5
